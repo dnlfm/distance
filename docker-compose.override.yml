@@ -1,0 +1,23 @@
+# docker-compose override for local development
+# - Mount local nominatim_data for imports
+# - Load environment variables from .env (copy from .env.example)
+# - Mount project into the app container for live code editing if desired
+
+services:
+  app:
+    env_file:
+      - .env
+    # Optional: mount the source code for interactive development (read-only by default)
+    # Remove or change to :rw if you need write access from the container
+    volumes:
+      - ./:/app:ro
+
+  nominatim:
+    # Mount a local directory with OSM extracts for import or persistent data for the nominatim container
+    volumes:
+      - ./nominatim_data:/var/lib/nominatim:rw
+    environment:
+      - NOMINATIM_DB_HOST=${POSTGRES_HOST:-postgres}
+      - NOMINATIM_DB_USER=${POSTGRES_USER:-nominatim}
+      - NOMINATIM_DB_PASSWORD=${POSTGRES_PASSWORD:-nominatim}
+      - NOMINATIM_DB_NAME=${POSTGRES_DB:-nominatim}

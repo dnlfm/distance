@@ -1,0 +1,75 @@
+services:
+  app:
+    build: .
+    image: distance-finder:latest
+    container_name: distance-finder-app
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    # Load environment from an env file (.env) and allow overriding with host env vars.
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://nominatim:nominatim@postgres:5432/nominatim}
+      - NOMINATIM_URL=${NOMINATIM_URL:-http://nominatim:8080}
+      - USER_AGENT=${USER_AGENT:-distance-finder/1.0}
+      - RUN_LOCAL=${RUN_LOCAL:-false}
+    depends_on:
+      - postgres
+      - nominatim
+    networks:
+      - distance-net
+
+  postgres:
+    image: postgis/postgis:15-3.3
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    # You can override DOCKER_PLATFORM in .env for local M1 Macs (e.g. linux/arm64/v8)
+    container_name: distance-finder-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-nominatim}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-nominatim}
+      - POSTGRES_DB=${POSTGRES_DB:-nominatim}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - distance-net
+
+  nominatim:
+    # Optional local Nominatim service. This image and setup are commonly used for local instances
+    # and require additional configuration (importing OSM data) before the service is usable.
+    image: mediagis/nominatim:4.3
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    # You can override DOCKER_PLATFORM in .env for local M1 Macs (e.g. linux/arm64/v8)
+    container_name: distance-finder-nominatim
+    restart: unless-stopped
+    environment:
+      - NOMINATIM_DB_HOST=${NOMINATIM_DB_HOST:-postgres}
+      - NOMINATIM_DB_USER=${NOMINATIM_DB_USER:-nominatim}
+      - NOMINATIM_DB_PASSWORD=${NOMINATIM_DB_PASSWORD:-nominatim}
+      - NOMINATIM_DB_NAME=${NOMINATIM_DB_NAME:-nominatim}
+      # Optional: path to a local .osm.pbf file mounted into the nominatim_data volume.
+      # You can set this in .env (PBF_PATH) or override with environment when running compose.
+      # If set, the mediagis/nominatim container will use the PBF_PATH to import data.
+      - PBF_PATH=${PBF_PATH:-/var/lib/nominatim/sudeste-latest.osm.pbf}
+      - NOMINATIM_DB_PASSWORD=${NOMINATIM_DB_PASSWORD:-nominatim}
+      - NOMINATIM_DB_NAME=${NOMINATIM_DB_NAME:-nominatim}
+    volumes:
+      - nominatim_data:/var/lib/nominatim
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - distance-net
+
+networks:
+  distance-net:
+
+volumes:
+  postgres_data:
+  nominatim_data:
