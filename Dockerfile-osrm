@@ -1,0 +1,14 @@
+FROM ghcr.io/project-osrm/osrm-backend:latest
+
+LABEL org.opencontainers.image.title="distance-finder-osrm"
+LABEL org.opencontainers.image.description="OSRM backend runner for extracting, preparing, and serving"
+
+ENV OSRM_PROFILE=car \
+    PBF_PATH=/data/sudeste-251019.osm.pbf \
+    OSRM_ALGORITHM=ch
+
+# Add the startup script and make it the entrypoint
+COPY osrm-start.sh /usr/local/bin/osrm-start
+RUN chmod +x /usr/local/bin/osrm-start
+
+ENTRYPOINT ["/usr/local/bin/osrm-start"]

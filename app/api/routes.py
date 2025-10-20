@@ -5,7 +5,7 @@ import httpx
 from app.api import schemas
 from app.core.config import Settings, get_settings
 from app.services.geocode import geocode_address
-from app.services.distance import haversine_distance
+from app.services.distance import haversine_distance, distance_via_best_method
 
 
 """API routes for distance computations. - api, routes"""
@@ -64,9 +64,22 @@ async def compute_distances(
         for dest in req.destinations:
             lat, lon = await _resolve_latlon(dest, client, settings)
 
-            dist_km = haversine_distance(origin_lat, origin_lon, lat, lon)
+            # Try routing-based distance first (OSRM -> geodesic -> haversine)
+            dist_info = await distance_via_best_method(origin_lat, origin_lon, lat, lon, client, settings)
+
+            dist_km = dist_info.get("distance_km") or 0.0
+            duration = dist_info.get("duration_seconds")
+            method = dist_info.get("method")
+
             results.append(
-                schemas.DistanceResult(name=dest.name or dest.address or "", lat=lat, lon=lon, distance_km=dist_km)
+                schemas.DistanceResult(
+                    name=dest.name or dest.address or "",
+                    lat=lat,
+                    lon=lon,
+                    distance_km=dist_km,
+                    duration_seconds=duration,
+                    distance_method=method,
+                )
             )
 
         # sort by distance asc
@@ -106,9 +119,21 @@ async def compute_distances_from_addresses(
         results: List[schemas.DistanceResult] = []
         for dest in req.destinations:
             lat, lon = await _resolve_latlon(dest, client, settings)
-            dist_km = haversine_distance(origin_lat, origin_lon, lat, lon)
+
+            dist_info = await distance_via_best_method(origin_lat, origin_lon, lat, lon, client, settings)
+            dist_km = dist_info.get("distance_km") or 0.0
+            duration = dist_info.get("duration_seconds")
+            method = dist_info.get("method")
+
             results.append(
-                schemas.DistanceResult(name=dest.name or dest.address or "", lat=lat, lon=lon, distance_km=dist_km)
+                schemas.DistanceResult(
+                    name=dest.name or dest.address or "",
+                    lat=lat,
+                    lon=lon,
+                    distance_km=dist_km,
+                    duration_seconds=duration,
+                    distance_method=method,
+                )
             )
 
         results.sort(key=lambda r: r.distance_km)

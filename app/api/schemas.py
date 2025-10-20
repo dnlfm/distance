@@ -32,6 +32,10 @@ class DistanceResult(BaseModel):
     lat: float
     lon: float
     distance_km: float
+    # Optional estimated travel duration in seconds (when routing/OSRM is used)
+    duration_seconds: Optional[float] = None
+    # Method used to compute distance: 'osrm', 'geodesic', 'haversine', etc.
+    distance_method: Optional[str] = None
 
 
 # --- New schemas for geocoding and address-only distance endpoint ---

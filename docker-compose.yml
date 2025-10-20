@@ -17,6 +17,7 @@ services:
     depends_on:
       - postgres
       - nominatim
+      - osrm
     networks:
       - distance-net
 
@@ -55,15 +56,32 @@ services:
       # Optional: path to a local .osm.pbf file mounted into the nominatim_data volume.
       # You can set this in .env (PBF_PATH) or override with environment when running compose.
       # If set, the mediagis/nominatim container will use the PBF_PATH to import data.
-      - PBF_PATH=${PBF_PATH:-/var/lib/nominatim/sudeste-latest.osm.pbf}
-      - NOMINATIM_DB_PASSWORD=${NOMINATIM_DB_PASSWORD:-nominatim}
-      - NOMINATIM_DB_NAME=${NOMINATIM_DB_NAME:-nominatim}
+      - PBF_PATH=${PBF_PATH:-/var/lib/nominatim/sudeste-251019.osm.pbf}
     volumes:
       - nominatim_data:/var/lib/nominatim
     ports:
       - "8080:8080"
     depends_on:
       - postgres
+    networks:
+      - distance-net
+
+  osrm:
+    build:
+      context: .
+      dockerfile: Dockerfile-osrm
+    image: distance-finder-osrm:latest
+    container_name: distance-finder-osrm
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    tty: true
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./nominatim_data:/data
+    environment:
+      - OSRM_PROFILE=${OSRM_PROFILE:-car}
+      - PBF_PATH=${PBF_PATH:-/data/sudeste-251019.osm.pbf}
+      - OSRM_ALGORITHM=${OSRM_ALGORITHM:-ch}
     networks:
       - distance-net
 

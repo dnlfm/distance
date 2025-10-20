@@ -93,7 +93,7 @@ API usage
 1. Endpoint: POST /api/distance
 2. Request JSON (origin can be lat/lon or address; destinations are list of destinations with lat/lon or address):
 
-Example using an address origin:
+Example using an address origin (existing endpoint):
 
 ```bash
 curl -s -X POST "http://localhost:80/api/distance" -H "Content-Type: application/json" -d '
@@ -107,6 +107,64 @@ curl -s -X POST "http://localhost:80/api/distance" -H "Content-Type: application
 ```
 
 Response: JSON array of objects with fields: name, lat, lon, distance_km (sorted ascending by distance)
+
+New endpoints added
+
+To make the service easier to integrate with other systems, two additional endpoints are provided:
+
+- POST /api/geocode — geocode a single address and return lat/lon. Use this to persist geocoded results in your own DB and avoid repeated calls to Nominatim.
+- POST /api/distance/addresses — a shortcut endpoint that accepts an origin_address string and a list of destinations defined only by name and address (no lat/lon required). The service will geocode all addresses and compute distances, returning the same DistanceResult items (name, lat, lon, distance_km) sorted by ascending distance.
+
+Examples
+
+Geocode a single address (useful to store lat/lon in another service):
+
+```bash
+curl -s -X POST "http://localhost:80/api/geocode" \
+  -H "Content-Type: application/json" \
+  -d '{"address":"Praça da Sé, São Paulo"}' | jq
+```
+
+Example response:
+
+```json
+{
+  "lat": -23.55052,
+  "lon": -46.633309
+}
+```
+
+Use the geocode endpoint to cache results in your DB. The app also exposes the same geocoding functionality internally when you provide an address instead of lat/lon to the /api/distance endpoint.
+
+Compute distances providing only addresses (shortcut endpoint):
+
+```bash
+curl -s -X POST "http://localhost:80/api/distance/addresses" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "origin_address": "Praça da Sé, São Paulo",
+    "destinations": [
+      {"name": "Rio", "address": "Praça Mauá, Rio de Janeiro"},
+      {"name": "Campinas", "address": "Praça Rui Barbosa, Campinas"}
+    ]
+  }' | jq
+```
+
+Example response (array sorted by distance_km):
+
+```json
+[
+  {"name":"Campinas","lat":-22.9099,"lon":-47.0626,"distance_km":...},
+  {"name":"Rio","lat":-22.9068,"lon":-43.1729,"distance_km":...}
+]
+```
+
+Notes and best practices
+
+- Rate limits and caching: Public Nominatim servers impose rate limits and require a meaningful User-Agent header. For production workloads or larger volumes of requests, host your own Nominatim instance or cache geocoding results in your own DB. The /api/geocode endpoint is provided to help storing lat/lon for addresses you care about.
+- Error handling: Geocoding failures return HTTP 400 with an error message. Validation errors return HTTP 422.
+- Sorting: Distance responses are sorted by ascending distance (closest first).
+- Reuse: Internally the routes reuse the same geocoding helper so behavior is consistent between /api/geocode, /api/distance when addresses are provided, and /api/distance/addresses.
 
 Running tests
 Locally (if you have Python & dependencies installed):
