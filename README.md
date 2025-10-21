@@ -21,6 +21,94 @@ Quick Start
 
    It may take a while, about 45+ minutes to process OSRM routes before it becomes available.
 
+Testing the API
+-----------
+
+#### 1) POST /api/distance
+  
+  **About**: Returns the distance between one address and multiple destinations, using latitude and longitude.
+
+  Request JSON (origin can be lat/lon or address; destinations are list of destinations with lat/lon or address):
+
+  Example using an address origin:
+
+  ```bash
+  curl -s -X POST "http://localhost:80/api/distance" -H "Content-Type: application/json" -d '
+  {
+    "origin": {"address": "Praça da Sé, São Paulo"},
+    "destinations": [
+      {"name": "Rio", "lat": -22.9068, "lon": -43.1729},
+      {"name": "Campinas", "lat": -22.9099, "lon": -47.0626}
+    ]
+  }' | jq
+  ```
+
+  **Response**: JSON array of objects with fields: name, lat, lon, distance_km (sorted ascending by distance)
+
+#### 2) POST /api/geocode 
+
+  **About**: Geocode a single address and return lat/lon. Use this to persist geocoded results in your own DB and avoid repeated calls to Nominatim.
+
+  Geocode a single address (useful to store lat/lon in another service):
+
+  ```bash
+  curl -s -X POST "http://localhost:80/api/geocode" \
+    -H "Content-Type: application/json" \
+    -d '{"address":"Praça da Sé, São Paulo"}' | jq
+  ```
+
+  Example response:
+
+  ```json
+  {
+    "lat": -23.55052,
+    "lon": -46.633309
+  }
+  ```
+
+  Use the geocode endpoint to cache results in your DB. The app also exposes the same geocoding functionality internally when you provide an address instead of lat/lon to the /api/distance endpoint.
+  
+#### 3) POST /api/distance/addresses
+
+  **About**: a shortcut endpoint that accepts an origin_address string and a list of destinations defined only by name and address (no lat/lon required). The service will geocode all addresses and compute distances, returning the same DistanceResult items (name, lat, lon, distance_km) sorted by ascending distance.
+
+  Compute distances providing only addresses (shortcut endpoint):
+
+  ```bash
+  curl -s -X POST "http://localhost:80/api/distance/addresses" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "origin_address": "Praça da Sé, São Paulo",
+      "destinations": [
+        {"name": "Rio", "address": "Praça Mauá, Rio de Janeiro"},
+        {"name": "Campinas", "address": "Praça Rui Barbosa, Campinas"}
+      ]
+    }' | jq
+  ```
+
+  Example response (array sorted by distance_km):
+
+  ```json
+  [
+    {
+      "name":"Campinas",
+      "lat":-22.9099,
+      "lon":-47.0626,
+      "distance_km": 93.5963,
+      "duration_seconds": 4576.7,
+      "distance_method": "osrm"
+    },
+    {
+      "name":"Rio",
+      "lat":-22.9068,
+      "lon":-43.1729,
+      "distance_km": 433.61920000000003,
+      "duration_seconds": 20070.9,
+      "distance_method": "osrm"
+    }
+  ]
+  ```
+
 About
 -----------
 
