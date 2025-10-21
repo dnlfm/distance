@@ -43,7 +43,28 @@ Testing the API
   }' | jq
   ```
 
-  **Response**: JSON array of objects with fields: name, lat, lon, distance_km (sorted ascending by distance)
+  **Response** (sorted ascending by distance):
+  
+  ```json
+  [
+    {
+      "name": "Campinas",
+      "lat": -22.9099,
+      "lon": -47.0626,
+      "distance_km": 93.5963,
+      "duration_seconds": 4576.7,
+      "distance_method": "osrm"
+    },
+    {
+      "name": "Rio",
+      "lat": -22.9068,
+      "lon": -43.1729,
+      "distance_km": 433.61920000000003,
+      "duration_seconds": 20070.9,
+      "distance_method": "osrm"
+    }
+  ]
+  ```
 
 #### 2) POST /api/geocode 
 
@@ -57,12 +78,12 @@ Testing the API
     -d '{"address":"Praça da Sé, São Paulo"}' | jq
   ```
 
-  Example response:
+  **Response**:
 
   ```json
   {
-    "lat": -23.55052,
-    "lon": -46.633309
+    "lat": -23.5503898,
+    "lon": -46.633081
   }
   ```
 
@@ -86,7 +107,7 @@ Testing the API
     }' | jq
   ```
 
-  Example response (array sorted by distance_km):
+  **Response** (array sorted by distance_km):
 
   ```json
   [
