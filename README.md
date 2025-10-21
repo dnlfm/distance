@@ -1,5 +1,29 @@
 # Distance Finder
 
+Quick Start
+-----------
+
+1) Prepare local nominatim data folder (optional, only required if you plan to run a local Nominatim service):
+
+   The repository includes a Makefile target that creates a folder for Nominatim data and will also copy .env.example to .env if present. Run:
+
+   ```sh
+   make setup
+   ```
+
+   Ensure the downloaded file is present in `./nominatim_data` before proceeding to step 2 below.
+
+2) Run the full stack (app + local Nominatim + OSRM):
+
+   ```sh
+   docker-compose up --build
+   ```
+
+   It may take a while, about 45+ minutes to process OSRM routes before it becomes available.
+
+About
+-----------
+
 Small FastAPI service to geocode an origin address (using a Nominatim-compatible service) and compute distances (Haversine) to a list of destinations, returning the destinations sorted by ascending distance.
 
 This repo provides:

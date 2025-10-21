@@ -22,15 +22,19 @@ if [ ! -f "$PBF" ]; then
 fi
 
 # 1) Extract (idempotent)
-if [ ! -f "$BASE" ]; then
+# If any extracted artifacts with the base prefix exist (e.g. $BASE.*),
+# assume extraction was already performed and skip osrm-extract.
+# This handles OSRM versions that create files like $BASE.edges, $BASE.cnbg, etc.
+set -- "${BASE}."*
+if [ -e "$1" ] && [ "$1" != "${BASE}.*" ]; then
+  echo "==> Extract artifacts exist, skipping."
+else
   echo "==> Running osrm-extract ..."
   osrm-extract -p "$PROFILE" "$PBF"
-else
-  echo "==> Extract artifacts exist, skipping."
 fi
 
 # 2) Prepare graph + 3) Serve
-if [ "$OSRM_ALGORITHM" = "mld" ]; then
+if [ "${OSRM_ALGORITHM}" = "mld" ]; then
   if [ ! -f "${BASE}.partition" ] || [ ! -f "${BASE}.cells" ]; then
     echo "==> Running osrm-partition + osrm-customize ..."
     osrm-partition "$BASE"
