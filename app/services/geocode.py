@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 import httpx
 
 from app.core.config import Settings
@@ -92,3 +92,26 @@ async def geocode_address(address: str, client: httpx.AsyncClient, settings: Set
         raise ValueError(f"Unexpected geocoding response format for address '{address}': {item}") from exc
 
     return lat, lon
+
+async def geocode_best_effort(parts: List[str], client: httpx.AsyncClient, settings: Settings) -> Tuple[float, float]:
+    """Best-effort geocoding by progressively dropping most specific parts. - geocode_best_effort
+
+    Accepts parts ordered from most specific to most generic. Tries the full
+    joined address first, then iteratively removes the first element until a
+    result is found or none remain.
+    """
+    if not parts:
+        raise ValueError("No address parts provided")
+
+    cleaned = [p.strip() for p in parts if isinstance(p, str) and p.strip()]
+    if not cleaned:
+        raise ValueError("No valid address parts provided")
+
+    for i in range(0, len(cleaned)):
+        candidate = ", ".join(cleaned[i:])
+        try:
+            return await geocode_address(candidate, client, settings)
+        except ValueError:
+            continue
+
+    raise ValueError(f"Address not found from provided parts: {cleaned}")
