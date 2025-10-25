@@ -14,6 +14,8 @@ Quick links
   - [/api/distance/addresses](#3-post-apidistanceaddresses)
   - [/api/distance/parts](#4-post-apidistanceparts)
   - [/api/distance/structured](#5-post-apidistancestructured)
+  - [/api/geocode/parts](#6-post-apigeocodeparts)
+  - [/api/geocode/structured](#7-post-apigeocodestructured)
 - [Environment variables](#environment-variables-env-recommended)
 - [Run with docker-compose](#run-with-docker-compose)
 - [Local Nominatim notes (optional)](#local-nominatim-notes-optional)
